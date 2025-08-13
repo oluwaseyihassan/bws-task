@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import { FixturesResponse } from 'src/types/types';
 
 @Injectable()
 export class PredictionService {
@@ -10,12 +11,12 @@ export class PredictionService {
         private readonly configService: ConfigService
     ) {}
     
-    async getPredictionsFromProvider(date: string, include: string = "", filters: string = "", select: string = "") {
+    async getPredictionsFromProvider(date: string, include: string = "", filters: string = "", select: string = "", page: number = 1, perPage: number = 50) {
         // const baseUrl = this.configService.get<string>('BASE_URL');
         
         try {
             const { data } = await firstValueFrom(
-                this.httpService.get(`/fixtures/date/${date}?include=${include}&filters=${filters}&select=${select}`)
+                this.httpService.get(`/fixtures/date/${date}?include=${include}&filters=${filters}&select=${select}&page=${page}&per_page=${perPage}`)
             )
             return data;
         } catch (error) {
@@ -24,10 +25,18 @@ export class PredictionService {
         }
     }
 
-    async fetchPredictions(date: string, include: string = "", filters: string = "", select: string = "") {
-        const predictions = await this.getPredictionsFromProvider(date, include, filters, select);
+    async fetchPredictions(date: string, include: string = "", filters: string = "", select: string = "", page: number = 1, perPage: number = 50) {
+        const predictions: FixturesResponse = await this.getPredictionsFromProvider(date, include, filters, select, page, perPage);
 
-        console.log('Fetched predictions:', predictions);
-        return predictions;
+        // Filter fixtures with predictions
+        const filteredFixtures = predictions?.data?.filter(
+            (fixture) => fixture.predictions && fixture.predictions.length > 0
+        ) || [];
+
+        // Return only filtered fixtures
+        return {
+            ...predictions,
+            data: filteredFixtures
+        };
     }
 }

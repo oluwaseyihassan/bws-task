@@ -7,7 +7,7 @@ export class PredictionController {
     constructor(private predictionService: PredictionService) {}
 
     @Get(":date")
-    getPredictions(@ValidDate('date') date: string, @Query("include") include: string, @Query("filters") filters: string, @Query("select") select: string) {
-        return this.predictionService.fetchPredictions(date, include, filters, select)
+    getPredictions(@ValidDate('date') date: string, @Query("include") include: string, @Query("filters") filters: string, @Query("select") select: string, @Query("page") page: number, @Query("per_page") perPage: number) {
+        return this.predictionService.fetchPredictions(date, include, filters, select, page, perPage)
     }
 }
