@@ -1,5 +1,5 @@
 export type FixturesResponse = {
-    data: Fixtures[] | [];
+    data: Fixtures[];
     pagination?: Pagination;
 } | null;
 
