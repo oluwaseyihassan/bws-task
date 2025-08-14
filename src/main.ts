@@ -14,6 +14,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'https://bws-task.vercel.app',
+      'https://bws-frontend-task.vercel.app',
       'https://bws-backend-task.onrender.com'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
