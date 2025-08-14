@@ -3,6 +3,18 @@ export type FixturesResponse = {
     pagination?: Pagination;
 } | null;
 
+export interface SuccessType {
+    status: 'success';
+    data: FixturesResponse;
+    message: string;
+}
+
+export interface ErrorType {
+    status: 'error';
+    message: string;
+    error: any;
+}
+
 export interface Fixtures {
     id: number;
     league_id: number;
@@ -43,4 +55,20 @@ export interface Pagination {
     current_page: number;
     next_page: string | null;
     has_more: boolean;
+}
+
+export interface Participants {
+    id: number;
+    name: string;
+    image_path: string;
+    meta: {
+        location: string;
+        winner: boolean | null;
+    }
+}
+
+export interface Country {
+    id: number;
+    name: string;
+    image_path: string | null;
 }
