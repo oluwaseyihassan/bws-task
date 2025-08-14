@@ -98,6 +98,7 @@ export class PredictionService {
             // Cache the result for 60 minutes
             await this.cacheService.set(cacheKey, result, 60);
 
+            console.log(result);
             return result;
 
         } catch (error) {
