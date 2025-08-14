@@ -1,104 +1,35 @@
-import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
 import { FixturesResponse, SuccessType } from 'src/types/types';
 import { successResponse, errorResponse } from 'src/utils/response';
+import { ExternalApiService } from '../external-api/external-api.service';
+import { CacheService } from 'src/cache/cache.sevice';
 
 @Injectable()
 export class PredictionService {
     constructor(
-        private readonly httpService: HttpService,
-        private readonly configService: ConfigService
+        private readonly externalApiService: ExternalApiService,
+        private readonly cacheService: CacheService
     ) {}
-    
- async getPredictionsFromProvider(
-    date: string,
-    include: string = "",
-    filters: string = "",
-    select: string = "",
-    perPage: number = 1000 // max allowed
-) {
-    try {
-        let page = 1;
-        let hasMore = true;
-        let allData: any[] = [];
-
-        while (hasMore) {
-            const { data } = await firstValueFrom(
-                this.httpService.get(
-                    `/fixtures/date/${date}?include=${include}&filters=${filters}&select=${select}&page=${page}&per_page=${perPage}`
-                )
-            );
-
-            // Append current page’s data
-            if (data?.data?.length) {
-                allData.push(...data.data);
-            }
-
-            // Check if more pages exist
-            if (data?.pagination?.has_more) {
-                page++;
-            } else {
-                hasMore = false;
-            }
-        }
-
-        return successResponse(
-            { data: allData },
-            'Predictions fetched successfully'
-        );
-
-    } catch (error) {
-        console.error('Error fetching predictions:', error.message);
-        return errorResponse('Failed to fetch predictions', error.message);
-    }
-}
-
-
-async getFixturesByNameFromProvider(
-    name: string,
-    include: string = "",
-    filters: string = "",
-    select: string = "",
-    perPage: number = 1000 // Max allowed
-) {
-    try {
-        let page = 1;
-        let allData = [] as any[];
-        let hasMore = true;
-
-        while (hasMore) {
-            const { data } = await firstValueFrom(
-                this.httpService.get(
-                    `/fixtures/search/${name}?include=${include}&filters=${filters}&select=${select}&page=${page}&per_page=${perPage}`
-                )
-            );
-            console.log(data)
-            if (data?.data?.length) {
-                allData.push(...data.data);
-            }
-
-            // Check pagination
-            if (data?.pagination?.has_more) {
-                page++;
-            } else {
-                hasMore = false;
-            }
-        }
-
-        return successResponse(allData, 'All fixtures fetched successfully');
-    } catch (error) {
-        console.error('Error fetching fixtures by name:', error);
-        return errorResponse('Failed to fetch fixtures by name', error.message);
-    }
-}
-
-
 
     async fetchPredictions(date: string, include: string = "", filters: string = "", select: string = "", filterByPercentage: number = 50) {
         try {
-            const predictionsResponse = await this.getPredictionsFromProvider(date, include, filters, select);
+            // Generate cache key
+            const cacheKey = this.cacheService.generateCacheKey('predictions', {
+                date,
+                include,
+                filters,
+                select,
+                filterByPercentage
+            });
+
+            // Check cache first
+            const cachedResult = await this.cacheService.get(cacheKey);
+            if (cachedResult) {
+                console.log('Returning cached predictions');
+                return cachedResult;
+            }
+
+            const predictionsResponse = await this.externalApiService.getFixturesByDate(date, include, filters, select);
             
             // Check if the response was successful
             if (predictionsResponse.status === 'error') {
@@ -116,13 +47,18 @@ async getFixturesByNameFromProvider(
                 return (fixture.predictions?.find((prediction: any) => prediction.type_id === 237)?.predictions?.home ?? 0) >= filterByPercentage
             });
 
-            console.log("fetched");
+            console.log("fetched from API");
             
-            // Return success response with filtered fixtures
-            return successResponse({
+            // Create success response
+            const result = successResponse({
                 ...predictions,
                 data: filteredHomeFixtures
             }, 'Filtered predictions fetched successfully');
+
+            // Cache the result for 30 minutes
+            await this.cacheService.set(cacheKey, result, 30);
+
+            return result;
 
         } catch (error) {
             console.error('Error fetching filtered predictions:', error.message);
@@ -132,20 +68,52 @@ async getFixturesByNameFromProvider(
 
     async fetchFixturesByName(name: string, include: string = "", filters: string = "", select: string = "", perPage: number = 50) {
         try {
-            const fixturesResponse = await this.getFixturesByNameFromProvider(name, include, filters, select, perPage);
+            // Generate cache key
+            const cacheKey = this.cacheService.generateCacheKey('fixtures-by-name', {
+                name,
+                include,
+                filters,
+                select,
+                perPage
+            });
+
+            // Check cache first
+            const cachedResult = await this.cacheService.get(cacheKey);
+            if (cachedResult) {
+                console.log('Returning cached fixtures by name');
+                return cachedResult;
+            }
+
+            const fixturesResponse = await this.externalApiService.getFixturesByName(name, include, filters, select, perPage);
             if (fixturesResponse.status === 'error') {
                 return fixturesResponse;
             }
 
-            const fixtures: FixturesResponse = (fixturesResponse as SuccessType).data;
+            const fixtures: any = (fixturesResponse as SuccessType).data;
 
-            return successResponse({
+            const result = successResponse({
                 data: fixtures ?? []
             }, 'Fetched fixtures by name successfully');
+
+            // Cache the result for 60 minutes
+            await this.cacheService.set(cacheKey, result, 60);
+
+            return result;
 
         } catch (error) {
             console.error('Error fetching fixtures by name:', error.message);
             return errorResponse('Failed to fetch fixtures by name', error.message);
+        }
+    }
+
+    // Method to clear specific cache
+    async clearPredictionsCache(date?: string): Promise<void> {
+        if (date) {
+            const cacheKey = this.cacheService.generateCacheKey('predictions', { date });
+            await this.cacheService.delete(cacheKey);
+        } else {
+            // Clear all prediction-related cache
+            await this.cacheService.clear();
         }
     }
 }

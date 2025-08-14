@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PredictionModule } from './prediction/prediction.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ApiCache, ApiCacheSchema } from './cache/cache.schema';
 
 
 @Module({
@@ -11,7 +13,15 @@ import { PredictionModule } from './prediction/prediction.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    PredictionModule
+    PredictionModule,
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI'),
+      }),
+      inject: [ConfigService],
+    }),
+    MongooseModule.forFeature([{ name: ApiCache.name, schema: ApiCacheSchema }]),
   ],
   controllers: [AppController],
   providers: [AppService],
