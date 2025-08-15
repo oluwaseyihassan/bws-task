@@ -16,7 +16,7 @@ export class ExternalApiService {
         include: string = "",
         filters: string = "",
         select: string = "",
-        perPage: number = 1000 // max allowed
+        perPage: number = 1000
     ) {
         try {
             let page = 1;
@@ -59,7 +59,7 @@ export class ExternalApiService {
         include: string = "",
         filters: string = "",
         select: string = "",
-        perPage: number = 1000 // Max allowed
+        perPage: number = 1000
     ) {
         try {
             let page = 1;

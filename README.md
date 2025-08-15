@@ -79,7 +79,7 @@ GET /prediction/:date
 
 **Example:**
 ```bash
-curl "http://localhost:3000/prediction/2025-08-12?include=predictions&filterByPercentage=60"
+curl "http://localhost:3001/prediction/2025-08-12?include=predictions&filterByPercentage=60"
 ```
 
 **Response:**
@@ -124,7 +124,7 @@ GET /prediction/search/:name
 
 **Example:**
 ```bash
-curl "http://localhost:3000/prediction/search/Arsenal?include=teams"
+curl "http://localhost:3001/prediction/search/Arsenal?include=teams"
 ```
 
 ## Project Structure
@@ -165,7 +165,7 @@ src/
 | `API_KEY` | SportMonks API key | Yes | - |
 | `BASE_URL` | SportMonks API base URL | Yes | - |
 | `MONGODB_URI` | MongoDB connection string | Yes | - |
-| `PORT` | Application port | No | 3000 |
+| `PORT` | Application port | No | 3001 |
 
 ### Cache Configuration
 
